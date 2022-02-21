@@ -47,7 +47,7 @@ class Webmin():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution')
 
-    parser.add_argument('-t', metavar='<Target URL Path to CGI file>', help='Example: -t http://shock.me/', required=True)
+    parser.add_argument('-t', metavar='<Target URL>', help='Example: -t http://webmin.site/', required=True)
     args = parser.parse_args()
     
     try:
