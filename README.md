@@ -4,7 +4,7 @@ CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution
 
 ## Description
 
-A Pseudo-Shell for the CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution
+A Pseudo-Shell for the CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution using mkfifo
 
 ## Getting Started
 

