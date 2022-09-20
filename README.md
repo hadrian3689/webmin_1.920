@@ -1,11 +1,6 @@
-# Project Title
+# CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution
 
-CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution
-
-## Description
-
-A python3 script for the CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution that <br> 
-creates a reverse shell or a pseudo interactive shell using mkfifo for firewall evasion
+A python3 script for the CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution that creates a reverse shell or a pseudo interactive shell using mkfifo for firewall evasionA python3 script for the CVE-2019-15107 Webmin 1.920 Unauhenticated Remote Command Execution that creates a reverse shell or a pseudo interactive shell using mkfifo for firewall evasion
 
 ## Getting Started
 
